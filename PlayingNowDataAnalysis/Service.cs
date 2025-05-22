@@ -5,6 +5,7 @@ namespace PlayingNowDataAnalysis;
 public class ProfileView
 {
     public Guid ProfileOwnerUserId { get; set; }
+    public Guid ProfileViewerUserId { get; set; }
     public DateTime ViewedOn { get; set; }
 }
 
@@ -30,6 +31,7 @@ public class Service
 
         string rootFolder = @"/Users/belovanas/local-folder"; // Change this to your folder path
         var extractedData = new List<ProfileView>();
+        var overallProfileViewsCount = 0;
 
         foreach (var hourFolder in Directory.EnumerateDirectories(rootFolder))
         {
@@ -46,17 +48,26 @@ public class Service
                     {
                         foreach (var element in root.EnumerateArray())
                         {
-                            if (element.TryGetProperty("profileOwnerUserId", out var userIdProp) &&
-                                element.TryGetProperty("createdOn", out var createdOnProp))
+                            if (element.TryGetProperty("profileOwnerUserId", out var profileOwnerUserIdProp) &&
+                                element.TryGetProperty("createdOn", out var createdOnProp)
+                                &&
+                                element.TryGetProperty("profileViewerUserId", out var profileViewerUserIdProp))
                             {
-                                Guid userId = userIdProp.GetGuid();
+                                Guid profileOwnerUserId = profileOwnerUserIdProp.GetGuid();
+                                Guid profileViewerUserId = profileViewerUserIdProp.GetGuid();
                                 DateTime createdOn = createdOnProp.GetDateTime();
 
-                                extractedData.Add(new ProfileView()
+                                if (profileOwnerUserId != profileViewerUserId)
                                 {
-                                    ProfileOwnerUserId = userId,
-                                    ViewedOn = createdOn
-                                });
+                                    extractedData.Add(new ProfileView()
+                                    {
+                                        ProfileOwnerUserId = profileOwnerUserId,
+                                        ProfileViewerUserId = profileViewerUserId,
+                                        ViewedOn = createdOn
+                                    });
+                                }
+
+                                overallProfileViewsCount++;
                             }
                         }
                     }
